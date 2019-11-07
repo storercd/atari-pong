@@ -106,7 +106,7 @@ def compute_gradient(gradient_log_p, hidden_layer_values, observation_values, we
 def update_weights(weights, expectation_g_squared, g_dict, decay_rate, learning_rate):
     """ See here: http://sebastianruder.com/optimizing-gradient-descent/index.html#rmsprop"""
     epsilon = 1e-5
-    for layer_name in weights.keys():
+    for layer_name in list(weights.keys()):
         g = g_dict[layer_name]
         expectation_g_squared[layer_name] = decay_rate * expectation_g_squared[layer_name] + (1 - decay_rate) * g**2
         weights[layer_name] += (learning_rate * g)/(np.sqrt(expectation_g_squared[layer_name] + epsilon))
@@ -117,7 +117,7 @@ def discount_rewards(rewards, gamma):
     This implements that logic by discounting the reward on previous actions based on how long ago they were taken"""
     discounted_rewards = np.zeros_like(rewards)
     running_add = 0
-    for t in reversed(xrange(0, rewards.size)):
+    for t in reversed(range(0, rewards.size)):
         if rewards[t] != 0:
             running_add = 0 # reset the sum, since this was a game boundary (pong specific!)
         running_add = running_add * gamma + rewards[t]
@@ -159,7 +159,7 @@ def main():
     # To be used with rmsprop algorithm (http://sebastianruder.com/optimizing-gradient-descent/index.html#rmsprop)
     expectation_g_squared = {}
     g_dict = {}
-    for layer_name in weights.keys():
+    for layer_name in list(weights.keys()):
         expectation_g_squared[layer_name] = np.zeros_like(weights[layer_name])
         g_dict[layer_name] = np.zeros_like(weights[layer_name])
 
@@ -170,7 +170,7 @@ def main():
         env.render()
         processed_observations, prev_processed_observations = preprocess_observations(observation, prev_processed_observations, input_dimensions)
         hidden_layer_values, up_probability = apply_neural_nets(processed_observations, weights)
-    
+
         episode_observations.append(processed_observations)
         episode_hidden_layer_values.append(hidden_layer_values)
 
@@ -217,7 +217,7 @@ def main():
             episode_hidden_layer_values, episode_observations, episode_gradient_log_ps, episode_rewards = [], [], [], [] # reset values
             observation = env.reset() # reset env
             running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
-            print 'resetting env. episode reward total was %f. running mean: %f' % (reward_sum, running_reward)
+            print(f'episode {episode_number} reward total was {reward_sum}. running mean: {running_reward}')
             reward_sum = 0
             prev_processed_observations = None
 
