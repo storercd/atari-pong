@@ -2,6 +2,7 @@
 import numpy as np
 import pickle as pickle
 import gym
+import time
 
 # hyperparameters
 H = 200 # number of hidden layer neurons
@@ -68,6 +69,7 @@ xs,hs,dlogps,drs = [],[],[],[]
 running_reward = None
 reward_sum = 0
 episode_number = 0
+start_time = time.time() # start episode timer
 while True:
   if render: env.render()
 
@@ -122,8 +124,11 @@ while True:
 
     # boring book-keeping
     running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
-    print(f'episode {episode_number} reward total was {reward_sum}. running mean: {running_reward}')
+    end_time = time.time()
+    episode_seconds = round(end_time - start_time)
+    print(f'episode {episode_number} reward total was {reward_sum} ({episode_seconds}s). running mean: {running_reward}')
     if episode_number % 100 == 0: pickle.dump(model, open('save.p', 'wb'))
     reward_sum = 0
     observation = env.reset() # reset env
+    start_time = time.time() # restart episode timer
     prev_x = None
