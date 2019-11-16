@@ -1,26 +1,39 @@
 """ Trains an agent with (stochastic) Policy Gradients on Pong. Uses OpenAI Gym. """
-import numpy as np
-import pickle as pickle
 import gym
+import math
+import numpy as np
+from os import path
+import pickle as pickle
 import time
 
 # hyperparameters
-H = 200 # number of hidden layer neurons
+hidden_layer_neurons = 200 # number of hidden layer neurons
 batch_size = 10 # every how many episodes to do a param update?
 learning_rate = 1e-4
 gamma = 0.99 # discount factor for reward
 decay_rate = 0.99 # decay factor for RMSProp leaky sum of grad^2
 resume = True # resume from previous checkpoint?
 render = False
+frame_wait_ms = 0
 
+env_name = 'PongDeterministic-v4' # atari game name
+downsample_factor = 2 # set to 1 to process all pixels without downsampling
+model_file = f'{env_name}.model.p'
+
+# override frame wait if rendering is off
+if not render:
+  frame_wait_ms = 0
+
+# initialize the environment to get some info before we initialize the model
+env = gym.make(env_name)
 # model initialization
-D = 80 * 80 # input dimensionality: 80x80 grid
-if resume:
-  model = pickle.load(open('save.p', 'rb'))
+input_dimensionality = 80 * 80 # input dimensionality: 80x80 grid
+if resume and path.exists(model_file):
+  model = pickle.load(open(model_file, 'rb'))
 else:
   model = {}
-  model['W1'] = np.random.randn(H,D) / np.sqrt(D) # "Xavier" initialization
-  model['W2'] = np.random.randn(H) / np.sqrt(H)
+  model['W1'] = np.random.randn(hidden_layer_neurons,input_dimensionality) / np.sqrt(input_dimensionality) # "Xavier" initialization
+  model['W2'] = np.random.randn(hidden_layer_neurons) / np.sqrt(hidden_layer_neurons)
 
 grad_buffer = { k : np.zeros_like(v) for k,v in model.items() } # update buffers that add up gradients over a batch
 rmsprop_cache = { k : np.zeros_like(v) for k,v in model.items() } # rmsprop memory
@@ -28,10 +41,10 @@ rmsprop_cache = { k : np.zeros_like(v) for k,v in model.items() } # rmsprop memo
 def sigmoid(x):
   return 1.0 / (1.0 + np.exp(-x)) # sigmoid "squashing" function to interval [0,1]
 
-def prepro(I):
+def preprocess(I):
   """ prepro 210x160x3 uint8 frame into 6400 (80x80) 1D float vector """
   I = I[35:195] # crop
-  I = I[::2,::2,0] # downsample by factor of 2
+  I = I[::downsample_factor,::downsample_factor,0] # downsample by factor of 2
   I[I == 144] = 0 # erase background (background type 1)
   I[I == 109] = 0 # erase background (background type 2)
   I[I != 0] = 1 # everything else (paddles, ball) just set to 1
@@ -62,7 +75,7 @@ def policy_backward(eph, epdlogp):
   dW1 = np.dot(dh.T, epx)
   return {'W1':dW1, 'W2':dW2}
 
-env = gym.make("Pong-v0")
+env = gym.make(env_name)
 observation = env.reset()
 prev_x = None # used in computing the difference frame
 xs,hs,dlogps,drs = [],[],[],[]
@@ -74,8 +87,8 @@ while True:
   if render: env.render()
 
   # preprocess the observation, set input to network to be difference image
-  cur_x = prepro(observation)
-  x = cur_x - prev_x if prev_x is not None else np.zeros(D)
+  cur_x = preprocess(observation)
+  x = cur_x - prev_x if prev_x is not None else np.zeros(input_dimensionality)
   prev_x = cur_x
 
   # forward the policy network and sample an action from the returned probability
@@ -90,6 +103,8 @@ while True:
 
   # step the environment and get new measurements
   observation, reward, done, info = env.step(action)
+  time.sleep(frame_wait_ms / 1000)
+
   reward_sum += reward
 
   drs.append(reward) # record reward (has to be done after we call step() to get reward for previous action)
@@ -127,7 +142,8 @@ while True:
     end_time = time.time()
     episode_seconds = round(end_time - start_time)
     print(f'episode {episode_number} reward total was {reward_sum} ({episode_seconds}s). running mean: {running_reward}')
-    if episode_number % 100 == 0: pickle.dump(model, open('save.p', 'wb'))
+    if episode_number % 100 == 0:
+        pickle.dump(model, open(model_file, 'wb'))
     reward_sum = 0
     observation = env.reset() # reset env
     start_time = time.time() # restart episode timer
