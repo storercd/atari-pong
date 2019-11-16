@@ -13,7 +13,7 @@ learning_rate = 1e-4
 gamma = 0.99 # discount factor for reward
 decay_rate = 0.99 # decay factor for RMSProp leaky sum of grad^2
 resume = True # resume from previous checkpoint?
-render = False
+render = True
 frame_wait_ms = 0
 
 env_name = 'PongDeterministic-v4' # atari game name
@@ -26,8 +26,12 @@ if not render:
 
 # initialize the environment to get some info before we initialize the model
 env = gym.make(env_name)
+input_shape = env.observation_space.shape
+input_height = math.floor(input_shape[0]/downsample_factor)
+input_width = math.floor(input_shape[1]/downsample_factor)
+
 # model initialization
-input_dimensionality = 80 * 80 # input dimensionality: 80x80 grid
+input_dimensionality = input_height * input_width
 if resume and path.exists(model_file):
   model = pickle.load(open(model_file, 'rb'))
 else:
@@ -41,14 +45,17 @@ rmsprop_cache = { k : np.zeros_like(v) for k,v in model.items() } # rmsprop memo
 def sigmoid(x):
   return 1.0 / (1.0 + np.exp(-x)) # sigmoid "squashing" function to interval [0,1]
 
-def preprocess(I):
-  """ prepro 210x160x3 uint8 frame into 6400 (80x80) 1D float vector """
-  I = I[35:195] # crop
-  I = I[::downsample_factor,::downsample_factor,0] # downsample by factor of 2
-  I[I == 144] = 0 # erase background (background type 1)
-  I[I == 109] = 0 # erase background (background type 2)
-  I[I != 0] = 1 # everything else (paddles, ball) just set to 1
-  return I.astype(np.float).ravel()
+def to_grayscale(img):
+	return np.mean(img, axis=2).astype(np.uint8)
+
+def downsample(img):
+	return img[::downsample_factor, ::downsample_factor]
+
+def normalize_pixels(img):
+	return np.divide(img, 255)
+
+def preprocess(img):
+	return normalize_pixels(to_grayscale(downsample(img))).astype(np.float).ravel()
 
 def discount_rewards(r):
   """ take 1D float array of rewards and compute discounted reward """
