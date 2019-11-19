@@ -1,5 +1,6 @@
 """ Trains an agent with (stochastic) Policy Gradients on Pong. Uses OpenAI Gym. """
 import gym
+import argparse
 import math
 import numpy as np
 from os import path
@@ -13,10 +14,18 @@ learning_rate = 1e-4
 gamma = 0.99 # discount factor for reward
 decay_rate = 0.99 # decay factor for RMSProp leaky sum of grad^2
 resume = True # resume from previous checkpoint?
-render = True
 frame_wait_ms = 0
 
-env_name = 'PongDeterministic-v4' # atari game name
+parser = argparse.ArgumentParser()
+parser.add_argument("-g", "--game", help="Choose from available games. Default is 'Pong'.", default="Pong")
+parser.add_argument("-r", "--render", help="Choose if the game should be rendered. Default is 'False'.", default=False, type=bool)
+args = parser.parse_args()
+env_name = args.game
+render = args.render
+print("Selected game: " + str(env_name))
+print("Should render: " + str(render)) # TODO: parameter is not properly detected when indicating False
+
+env_name = env_name + 'Deterministic-v4' # add deterministic frame skip (4 frames)
 downsample_factor = 2 # set to 1 to process all pixels without downsampling
 model_file = f'{env_name}.model.p'
 
