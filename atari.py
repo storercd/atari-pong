@@ -91,7 +91,6 @@ def policy_backward(eph, epdlogp):
   dW1 = np.dot(dh.T, epx)
   return {'W1':dW1, 'W2':dW2}
 
-env = gym.make(env_name)
 observation = env.reset()
 prev_x = None # used in computing the difference frame
 xs,hs,dlogps,drs = [],[],[],[]
