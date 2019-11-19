@@ -64,7 +64,7 @@ def normalize_pixels(img):
 	return np.divide(img, 255)
 
 def preprocess(img):
-	return normalize_pixels(to_grayscale(downsample(img))).astype(np.float).ravel()
+	return normalize_pixels(to_grayscale(downsample(img))).astype(np.float32).ravel()
 
 def discount_rewards(r):
   """ take 1D float array of rewards and compute discounted reward """
