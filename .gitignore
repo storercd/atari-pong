@@ -1,2 +1,5 @@
 # IDE
 .vscode
+
+# Python working files
+__pycache__/
