@@ -17,6 +17,7 @@ gamma = 0.99 # discount factor for reward
 decay_rate = 0.99 # decay factor for RMSProp leaky sum of grad^2
 resume = True # resume from previous checkpoint?
 frame_wait_ms = 0
+model_save_interval = 100 # how many episodes before saving; adjust for faster games
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-g", "--game", help="Choose from available games. Default is 'Pong'.", default="Pong")
@@ -159,7 +160,7 @@ while True:
     end_time = time.time()
     episode_seconds = round(end_time - start_time)
     print(f'episode {episode_number} reward total was {reward_sum} ({episode_seconds}s). running mean: {running_reward}')
-    if episode_number % 100 == 0:
+    if episode_number % model_save_interval == 0:
         pickle.dump(model, open(model_file, 'wb'))
     reward_sum = 0
     observation = env.reset() # reset env
