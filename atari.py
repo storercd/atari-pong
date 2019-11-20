@@ -7,6 +7,8 @@ from os import path
 import pickle as pickle
 import time
 
+from gym_wrappers import AtariGymWrapper
+
 # hyperparameters
 hidden_layer_neurons = 200 # number of hidden layer neurons
 batch_size = 10 # every how many episodes to do a param update?
@@ -34,7 +36,7 @@ if not render:
   frame_wait_ms = 0
 
 # initialize the environment to get some info before we initialize the model
-env = gym.make(env_name)
+env = AtariGymWrapper.wrap(gym.make(env_name))
 input_shape = env.observation_space.shape
 input_height = math.floor(input_shape[0]/downsample_factor)
 input_width = math.floor(input_shape[1]/downsample_factor)
