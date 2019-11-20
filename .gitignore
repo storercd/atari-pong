@@ -3,3 +3,6 @@
 
 # Python working files
 __pycache__/
+
+# output files
+*.model.p
